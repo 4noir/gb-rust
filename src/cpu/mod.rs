@@ -12,6 +12,7 @@ pub struct CPU<'a> {
     sp: u16,
     pc: u16,
     mem: &'a mut Memory,
+    current_ticks: u32,
 }
 
 impl<'a> CPU<'a> {
@@ -27,20 +28,27 @@ impl<'a> CPU<'a> {
         }
     }
 
+    fn clock_4(&mut self) {
+        self.current_ticks = self.current_ticks.wrapping_add(4);
+    }
+
+    fn clock_reset(&mut self) {
+        self.current_ticks = 0;
+    }
+
     fn fetch_8(&mut self) -> u8 {
-        // TODO : Timer increment
         let ret = self.mem.read_8(self.pc);
         self.pc += 1;
         ret
     }
 
     fn read_8(&mut self, addr: u16) -> u8 {
-        // TODO : Timer
+        self.clock_4();
         self.mem.read_8(addr)
     }
 
     fn write_8(&mut self, addr: u16, to_write: u8) {
-        // TODO : Timer
+        self.clock_4();
         self.mem.write_8(addr, to_write);
     }
 
@@ -64,7 +72,10 @@ impl<'a> CPU<'a> {
         self.write_8(addr + 1, hi_byte);
     }
 
-    pub fn step(&mut self) {
+    pub fn step(&mut self) -> u8 {
+        self.clock_reset();
         let opcode = self.fetch_8();
+        self.exec_opcode(opcode);
+        return self.current_ticks;
     }
 }
