@@ -14,5 +14,5 @@ pub fn main() {
     let args = Args::parse();
     let boot_rom = args.boot_rom;
     let mut memory = Memory::new(boot_rom);
-    let CPU = CPU::new(&mut memory);
+    let cpu = CPU::new(&mut memory);
 }

@@ -2,13 +2,10 @@ mod opcodes;
 mod registers;
 
 use super::memory::Memory;
-use registers::{Register, RegisterFlag};
+use registers::Registers;
 
 pub struct CPU<'a> {
-    af: RegisterFlag, // LOWER 8 BITS ARE THE FLAGS
-    bc: Register,
-    de: Register,
-    hl: Register,
+    regs: Registers,
     sp: u16,
     pc: u16,
     mem: &'a mut Memory,
@@ -18,13 +15,11 @@ pub struct CPU<'a> {
 impl<'a> CPU<'a> {
     pub fn new(mem: &'a mut Memory) -> Self {
         CPU {
-            af: RegisterFlag::new(),
-            bc: Register::new(),
-            de: Register::new(),
-            hl: Register::new(),
+            regs: Registers::new(),
             sp: 0,
             pc: 0,
             mem,
+            current_ticks: 0,
         }
     }
 
@@ -37,7 +32,7 @@ impl<'a> CPU<'a> {
     }
 
     fn fetch_8(&mut self) -> u8 {
-        let ret = self.mem.read_8(self.pc);
+        let ret = self.read_8(self.pc);
         self.pc += 1;
         ret
     }
@@ -72,7 +67,7 @@ impl<'a> CPU<'a> {
         self.write_8(addr + 1, hi_byte);
     }
 
-    pub fn step(&mut self) -> u8 {
+    pub fn step(&mut self) -> u32 {
         self.clock_reset();
         let opcode = self.fetch_8();
         self.exec_opcode(opcode);
