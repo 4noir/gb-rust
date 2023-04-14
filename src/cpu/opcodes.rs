@@ -7,6 +7,7 @@ impl<'a> CPU<'a> {
         match opcode {
             // nop
             0x00 => return,
+            0xaf => self.op_0xaf(),
             0x31 => self.op_0x31(),
             0x21 => self.op_0x21(),
             0x32 => self.op_0x32(),
@@ -40,7 +41,7 @@ impl<'a> CPU<'a> {
     // xor a
     fn op_0xaf(&mut self) {
         self.regs.a = 0;
-        self.regs.set_flags(Flags::Z);
+        self.regs.f.set(Flags::Z, true);
     }
 
     // LD hl, d16
@@ -58,7 +59,7 @@ impl<'a> CPU<'a> {
     // JR nz, i8
     fn op_0x20(&mut self) {
         let offset = self.fetch_8() as i8;
-        if !self.regs.get_flags().contains(Flags::Z) {
+        if !self.regs.f.contains(Flags::Z) {
             self.clock_4();
             self.pc = self.pc.wrapping_add_signed(offset.into());
         }
@@ -78,10 +79,6 @@ impl<'a> CPU<'a> {
     // BIT 7, H
     fn op_0xcb7c(&mut self) {
         let h = self.regs.h >> 7;
-        if h == 0 {
-            self.regs.set_flags(Flags::Z);
-        } else {
-            self.regs.remove_flags(Flags::Z);
-        }
+        self.regs.f.set(Flags::Z, h == 0);
     }
 }

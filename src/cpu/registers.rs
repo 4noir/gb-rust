@@ -31,7 +31,7 @@ bitflags! {
 #[derive(PartialEq, Debug)]
 pub struct Registers {
     pub a: u8,
-    f: Flags,
+    pub f: Flags,
     pub b: u8,
     pub c: u8,
     pub d: u8,
@@ -49,16 +49,6 @@ impl Registers {
         self.a = (value >> 8) as u8;
         self.f =
             Flags::from_bits((value & 0x00F0) as u8).expect("incorrect flags in value for set_af");
-    }
-
-    pub fn set_flags(&mut self, flags: Flags) {
-        self.f.set(flags, true);
-    }
-    pub fn remove_flags(&mut self, flags: Flags) {
-        self.f.set(flags, false);
-    }
-    pub fn get_flags(&self) -> Flags {
-        self.f
     }
 
     pub fn new() -> Self {
