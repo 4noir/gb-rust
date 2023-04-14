@@ -7,78 +7,92 @@ impl<'a> CPU<'a> {
         match opcode {
             // nop
             0x00 => return,
-            0xaf => self.op_0xaf(),
-            0x31 => self.op_0x31(),
-            0x21 => self.op_0x21(),
-            0x32 => self.op_0x32(),
-            0x20 => self.op_0x20(),
-            0xCB => self.op_0xcb(),
-            0x0E => self.op_0x0e(),
-            0x3E => self.op_0x3e(),
-            0xE2 => self.op_0xe2(),
+            // INC C
+            0x0c => self.regs.c = self.a_inc(self.regs.c),
+            // LD (HL), A
+            0x77 => self.write_8(self.regs.hl(), self.regs.a),
+            // LD ($FF00 + u8), A
+            0xe0 => {
+                let addr = self.fetch_8();
+                self.write_8(0xFF00 | addr as u16, self.regs.a)
+            }
+            // LD DE, u16
+            0x11 => {
+                let v = self.fetch_16();
+                self.regs.set_de(v)
+            }
+            // xor a,a
+            0xAF => self.a_xor(self.regs.a),
+            // ld sp, u16
+            0x31 => self.sp = self.fetch_16(),
+            // LD hl, u16
+            0x21 => {
+                let value = self.fetch_16();
+                self.regs.set_hl(value);
+            }
+            // LD (HL-), A
+            0x32 => {
+                let a = self.regs.hld();
+                self.write_8(a, self.regs.a)
+            }
+            0x20 => {
+                let offset = self.fetch_8() as i8;
+                if !self.regs.f.contains(Flags::Z) {
+                    self.cpu_jr(offset)
+                }
+            }
+            // CB PREFIX
+            0xCB => self.exec_cb(),
+            // ld c, u8
+            0x0E => self.regs.c = self.fetch_8(),
+            // ld a, u8
+            0x3E => self.regs.a = self.fetch_8(),
+            // ld (ff00 + c), a
+            0xE2 => self.write_8(0xFF00 | self.regs.c as u16, self.regs.a),
             _ => unimplemented!(),
         }
     }
-    // ld (ff00 + c), a
-    fn op_0xe2(&mut self) {
-        self.write_8(0xFF00 | self.regs.c as u16, self.regs.a);
-    }
-    // ld a, u8
-    fn op_0x3e(&mut self) {
-        let new_a = self.fetch_8();
-        self.regs.a = new_a;
-    }
-    // ld c, u8
-    fn op_0x0e(&mut self) {
-        let new_c = self.fetch_8();
-        self.regs.c = new_c;
-    }
-    // ld sp, u16
-    fn op_0x31(&mut self) {
-        self.sp = self.fetch_16();
-    }
+}
 
-    // xor a
-    fn op_0xaf(&mut self) {
-        self.regs.a = 0;
-        self.regs.f.set(Flags::Z, true);
+impl<'a> CPU<'a> {
+    // Arithmetic logic
+    fn a_inc(&mut self, n: u8) -> u8 {
+        let res = n.wrapping_add(1);
+        self.regs.f.remove(Flags::N);
+        self.regs.f.set(Flags::Z, res == 0);
+        self.regs.f.set(Flags::H, (n & 0x0F) + 1 > 0x0F);
+        res
     }
-
-    // LD hl, d16
-    fn op_0x21(&mut self) {
-        let value = self.fetch_16();
-        self.regs.set_hl(value);
+    fn a_xor(&mut self, b: u8) {
+        self.regs.a ^= b;
+        self.regs.f.set(Flags::Z, self.regs.a == 0);
+        self.regs.f.set(Flags::H | Flags::N | Flags::C, false);
     }
+}
 
-    // ldd (hl)-, A
-    fn op_0x32(&mut self) {
-        self.write_8(self.regs.hl(), self.regs.a);
-        self.regs.set_hl(self.regs.hl().wrapping_sub(1));
-    }
-
-    // JR nz, i8
-    fn op_0x20(&mut self) {
-        let offset = self.fetch_8() as i8;
-        if !self.regs.f.contains(Flags::Z) {
-            self.clock_4();
-            self.pc = self.pc.wrapping_add_signed(offset.into());
-        }
+impl<'a> CPU<'a> {
+    fn cpu_jr(&mut self, n: i8) {
+        self.clock_4();
+        self.pc = self.pc.wrapping_add_signed(n as i16);
     }
 }
 
 // PREFIX CB OPERATIONS
 impl<'a> CPU<'a> {
-    fn op_0xcb(&mut self) {
+    fn exec_cb(&mut self) {
         let opcode = self.fetch_8();
         match opcode {
-            0x7C => self.op_0xcb7c(),
+            // BIT 7, H
+            0x7C => self.test_bit(self.regs.h, 7),
             _ => unimplemented!(),
         }
     }
 
-    // BIT 7, H
-    fn op_0xcb7c(&mut self) {
-        let h = self.regs.h >> 7;
-        self.regs.f.set(Flags::Z, h == 0);
+    fn test_bit(&mut self, v: u8, n: u8) {
+        assert!(n < 8);
+        let test = v >> n;
+        self.regs.f.set(Flags::Z, test == 0);
+        self.regs.f.remove(Flags::N);
+        self.regs.f.insert(Flags::H);
     }
 }

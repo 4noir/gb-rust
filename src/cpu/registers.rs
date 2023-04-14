@@ -51,6 +51,12 @@ impl Registers {
             Flags::from_bits((value & 0x00F0) as u8).expect("incorrect flags in value for set_af");
     }
 
+    pub fn hld(&mut self) -> u16 {
+        let res = self.hl();
+        self.set_hl(res.wrapping_sub(1));
+        return res;
+    }
+
     pub fn new() -> Self {
         return Registers {
             a: 0,
