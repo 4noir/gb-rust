@@ -8,11 +8,17 @@ use std::path::PathBuf;
 struct Args {
     #[arg(short, long, value_name = "FILE")]
     boot_rom: PathBuf,
+
+    game_rom: PathBuf,
 }
 
 pub fn main() {
     let args = Args::parse();
     let boot_rom = args.boot_rom;
-    let mut memory = Memory::new(boot_rom);
-    let cpu = CPU::new(&mut memory);
+    let game_rom = args.game_rom;
+    let mut memory = Memory::new(boot_rom, game_rom);
+    let mut cpu = CPU::new(&mut memory);
+    loop {
+        cpu.step();
+    }
 }

@@ -57,6 +57,12 @@ impl Registers {
         return res;
     }
 
+    pub fn hli(&mut self) -> u16 {
+        let res = self.hl();
+        self.set_hl(res.wrapping_add(1));
+        return res;
+    }
+
     pub fn new() -> Self {
         return Registers {
             a: 0,

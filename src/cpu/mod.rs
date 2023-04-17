@@ -23,6 +23,18 @@ impl<'a> CPU<'a> {
         }
     }
 
+    fn push_stack_16(&mut self, val: u16) {
+        self.clock_4();
+        self.sp = self.sp.wrapping_sub(2);
+        self.write_16(self.sp, val);
+    }
+
+    fn pop_stack_16(&mut self) -> u16 {
+        let ret = self.read_16(self.sp);
+        self.sp = self.sp.wrapping_add(2);
+        ret
+    }
+
     fn clock_4(&mut self) {
         self.current_ticks = self.current_ticks.wrapping_add(4);
     }
