@@ -41,10 +41,12 @@ pub struct Registers {
 }
 
 impl Registers {
+    #[allow(dead_code)]
     pub fn af(&self) -> u16 {
         return ((self.a as u16) << 8) | (self.f.bits() as u16 & 0x00F0);
     }
 
+    #[allow(dead_code)]
     pub fn set_af(&mut self, value: u16) {
         self.a = (value >> 8) as u8;
         self.f =

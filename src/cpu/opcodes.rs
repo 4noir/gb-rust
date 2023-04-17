@@ -7,7 +7,7 @@ impl<'a> CPU<'a> {
         println!("Current opcode: {:#X} ; pc : {:#X}", opcode, self.pc - 1);
         match opcode {
             // nop
-            0x00 => return,
+            0x00 => (),
             // LD A,(FF00 + u8)
             0xF0 => {
                 let addr = self.fetch_8();
@@ -179,6 +179,7 @@ impl<'a> CPU<'a> {
         self.regs.f.set(Flags::Z, self.regs.a == 0);
         self.regs.f.set(Flags::H | Flags::N | Flags::C, false);
     }
+    #[allow(dead_code)]
     fn a_sub(&mut self, b: u8) {
         let r = self.regs.a.wrapping_sub(b);
         self.regs.f.insert(Flags::N);
